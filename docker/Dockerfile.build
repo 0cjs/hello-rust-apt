@@ -1,0 +1,73 @@
+FROM debian:12
+
+####################################################################
+#   Basic system packages and configuration
+
+RUN  apt update     # Separate layer because this takes a while.
+RUN  DEBIAN_FRONTEND=noninteractive apt install -y \
+         sudo locales procps file curl wget netcat-openbsd \
+         git vim man-db \
+         build-essential \
+  && sed -i -e '/en_US/s/^# //' /etc/locale.gen \
+  && locale-gen \
+  && true
+
+####################################################################
+#   Rust installation and configuration
+
+#   We install a "global" Rust/Cargo so that the user-specific information
+#   in in a layer after this, speeding builds when we don't need to update
+#   to a new version of Rust. Use this in the container with:
+#     source ~/hello-rust-apt/docker/rustup-env
+#   Note that the installation is not yet world-writable.
+RUN  curl -sSf --proto '=https' --tlsv1.2 https://sh.rustup.rs \
+     | CARGO_HOME=/opt/cargo RUSTUP_HOME=/opt/rustup \
+       bash -s -- --no-modify-path \
+            --default-toolchain stable --profile minimal -y \
+  && true
+
+
+####################################################################
+#   User creation and setup
+
+#   To make iteractive debuging and testing of the framework easy, we
+#   create a user in the container with the same name/uid as the user using
+#   the container. This allows us to share code from this repo read/write
+#   into the container for interactive tweaking and re-building/re-running.
+#
+#   The user configuration includes:
+#   • Setup for no-password sudo (essential because the user has no
+#     password) and changing verifypw from `all` to `any` so `sudo -v`
+#     doesn't *always* prompt for a password.
+#   • Chown all of /opt/ (pre-installed build tools from an earlier layer)
+#     to the user so that they can, e.g., update Rust Cargo dependencies.
+#   • Install that user's dot-home configuration if available. Due to what
+#     arguably is a bug in bootstrap-user, we must remove ~/.bashrc etc.
+#     before running it or it will fail to replace those, which may be
+#     an inconvenience for users without a dot-home setup who want the
+#     default bashrc etc.
+#
+ARG USER_NAME USER_UID
+RUN  useradd \
+         --shell /bin/bash --create-home --home-dir /home/"$USER_NAME"  \
+         --user-group --groups sudo \
+         --uid "$USER_UID" "$USER_NAME" \
+  && : \
+  && echo "Defaults:$USER_NAME verifypw = any"    >  /etc/sudoers.d/50-user \
+  && echo "$USER_NAME ALL=(ALL:ALL) NOPASSWD:ALL" >> /etc/sudoers.d/50-user \
+  && : \
+  && chown -R "$USER_NAME" /opt/ \
+  && : \
+  && rm -f \
+         /home/"$USER_NAME"/.profile \
+         /home/"$USER_NAME"/.bash_profile \
+         /home/"$USER_NAME"/.bashrc \
+  && curl -sfl \
+        https://raw.githubusercontent.com/dot-home/dot-home/main/bootstrap-user \
+     | sudo --login --user "$USER_NAME" bash \
+  && true
+
+####################################################################
+
+USER $USER_NAME
+WORKDIR /home/$USER_NAME

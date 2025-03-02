@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'ec=$?; echo 1>&2 "INTERNAL ERROR: ec=$ec line=$LINENO cmd=$BASH_COMMAND";
+      exit $ec;' ERR
+
+elapsed_start=$(date +%s)
+
+####################################################################
+#   Utility functions
+
+die()  { ec="$1"; shift; echo 1>&2 "ERROR ($ec):" "$@"; exit $ec; }
+fail() { ec=$?; echo "FAILED exitcode=$ec ($(elapsed)s)"; exit $ec; }
+elapsed() { echo $(( $(date +%s) - $elapsed_start )); }
+
+setup_docker() {
+    declare -g docker=docker
+    if ! $docker --version; then
+        die "Cannot run '$docker' command. Check path?"
+    elif ! $docker info >/dev/null 2>&1; then
+        docker='sudo docker'
+        sudo -v -p 'sudo pw for %u@%h to run docker: ' \
+            || die 3 "Cannot sudo to run '$docker'; start proxy?"
+    fi
+}
+
+####################################################################
+#   Build/run functions
+
+docker_build_run() {
+    local btag="$1"; shift
+
+    #   We assume that if the user is running Test, they want to rebuild
+    #   the image (if necessary) and run a fresh container from it. This
+    #   will destroy any existing sessions in the old container, ensuring
+    #   we're starting clean.
+    $docker container rm -f "$btag" || true
+
+    local USER_ID="$(id -u)"
+    local USER_NAME="$(id -u -n)"
+
+    $docker buildx build \
+        --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
+        --tag "$btag" --file docker/Dockerfile.build docker/
+
+    #   Make this container "persistent" by starting a background process
+    #   that will simply continue running for a few hours; log in with
+    #   `dent` or `docker exec`. (When the sleep expires, the developer can
+    #   just re-run `Test` to start it again.)
+    #
+    #   Configuration notes:
+    #   • We mount this entire repo read/write into the home dir of the
+    #     user so we can build whatever parts of it we need.
+    $docker run --name "$btag"\
+        --rm=false --detach=true --tty=false \
+        -v "$PROJDIR:/home/$USER_NAME/$(basename "$PROJDIR"):rw" \
+        "$btag" /bin/sleep $((6*3600)) \
+        >/dev/null  # We don't need to display the container ID.
+}
+
+
+####################################################################
+#   Argument handling and setup
+
+export PROJDIR=$(command cd "$(dirname "$0")" && pwd -P)
+command cd "$PROJDIR"   # Makes life easier until we need to use file args.
+
+image_prefix=hra    # override with -i
+while [[ ${#@} -gt 0 ]]; do case "$1" in
+    -C)     shift; rm -rf ".build/";;
+    -c)     shift; rm -rf ".build/virtualenv" ".build/docker";;
+    -i)     shift; image_prefix="$1"; shift;;
+    --)     shift; break;;                  # remainder are ??? args?
+    *)      break;;                         # guessing remainder are for pytest
+esac; done
+[[ $# -eq 0 ]] || die 2 "Invalid arg: $1"
+setup_docker
+
+####################################################################
+#   build and test
+
+source "$PROJDIR/pactivate" -q      # make `dent` available
+
+docker_build_run "${image_prefix}-build"
+dent "${image_prefix}-build" bash -c '
+    source hello-rust-apt/docker/rustup-env
+    cd hello-rust-apt/webhello
+    echo "hello-rust-apt/webhello/: cargo build"
+    cargo build -q
+'
+dent "${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
+
+echo "OK ($(elapsed)s)"

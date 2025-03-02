@@ -1,0 +1,6 @@
+/.build/
+/tmp/
+
+#   We don't yet put Cargo build products in .build/.
+/webhello/Cargo.lock
+/webhello/target/

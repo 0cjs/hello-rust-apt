@@ -1,0 +1,3 @@
+#   `source` this file in the container to use the system rustup install.
+export CARGO_HOME=/opt/cargo RUSTUP_HOME=/opt/rustup
+source /opt/cargo/env
