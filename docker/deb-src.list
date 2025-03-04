@@ -1,0 +1,6 @@
+#   Debian source repos, for download, examination and experimentation.
+#   This goes in `/etc/apt/sources.list.d/deb-src.list`.
+
+deb-src http://deb.debian.org/debian/ bookworm main non-free-firmware non-free contrib
+deb-src http://security.debian.org/debian-security bookworm-security main non-free-firmware non-free contrib
+deb-src http://deb.debian.org/debian/ bookworm-updates main non-free-firmware non-free contrib

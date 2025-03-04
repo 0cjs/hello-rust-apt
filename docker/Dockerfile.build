@@ -3,11 +3,13 @@ FROM debian:12
 ####################################################################
 #   Basic system packages and configuration
 
+COPY --chmod=go+r deb-src.list /etc/apt/sources.list.d/
 RUN  apt update     # Separate layer because this takes a while.
 RUN  DEBIAN_FRONTEND=noninteractive apt install -y \
          sudo locales procps file curl wget netcat-openbsd \
          git vim man-db \
          build-essential \
+         dpkg-dev devscripts \
   && sed -i -e '/en_US/s/^# //' /etc/locale.gen \
   && locale-gen \
   && true
@@ -66,6 +68,11 @@ RUN  useradd \
         https://raw.githubusercontent.com/dot-home/dot-home/main/bootstrap-user \
      | sudo --login --user "$USER_NAME" bash \
   && true
+
+####################################################################
+#   Temporary changes to be moved above.
+#   This section is useful for quickly testing changes that will eventually
+#   move to earlier layers that will trigger a longer rebuild process.
 
 ####################################################################
 
