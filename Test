@@ -27,18 +27,20 @@ setup_docker() {
 #   Build/run functions
 
 docker_build_run() {
+    declare -g quiet
     local btag="$1"; shift
 
     #   We assume that if the user is running Test, they want to rebuild
     #   the image (if necessary) and run a fresh container from it. This
     #   will destroy any existing sessions in the old container, ensuring
     #   we're starting clean.
-    $docker container rm -f "$btag" || true
+    $docker container rm -f "$btag" >/dev/null 2>&1 || true
 
     local USER_ID="$(id -u)"
     local USER_NAME="$(id -u -n)"
 
-    $docker buildx build \
+    echo "----- Building image $btag"
+    $docker buildx build $quiet \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
         --tag "$btag" --file docker/Dockerfile.build docker/
 
@@ -50,6 +52,7 @@ docker_build_run() {
     #   Configuration notes:
     #   • We mount this entire repo read/write into the home dir of the
     #     user so we can build whatever parts of it we need.
+    echo "----- Running container $btag"
     $docker run --name "$btag"\
         --rm=false --detach=true --tty=false \
         -v "$PROJDIR:/home/$USER_NAME/$(basename "$PROJDIR"):rw" \
@@ -64,11 +67,13 @@ docker_build_run() {
 export PROJDIR=$(command cd "$(dirname "$0")" && pwd -P)
 command cd "$PROJDIR"   # Makes life easier until we need to use file args.
 
+quiet=-q
 image_prefix=hra    # override with -i
 while [[ ${#@} -gt 0 ]]; do case "$1" in
     -C)     shift; rm -rf ".build/";;
     -c)     shift; rm -rf ".build/virtualenv" ".build/docker";;
     -i)     shift; image_prefix="$1"; shift;;
+    -v)     shift; quiet='';;
     --)     shift; break;;                  # remainder are ??? args?
     *)      break;;                         # guessing remainder are for pytest
 esac; done
