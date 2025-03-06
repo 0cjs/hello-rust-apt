@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap '
+    ec=$?
+    echo 1>&2 "INTERNAL ERROR: ec=$ec line=$LINENO"
+    echo 1>&2 "    file=$0"
+    echo 1>&2 "    cmd=$BASH_COMMAND"
+    exit $ec;
+' ERR
+
+export PROJDIR=$(command cd "$(dirname "$0")/.." && pwd -P)
+mkdir -p "$PROJDIR"/.build/package
+command cd "$PROJDIR"/.build/package
+
+pkgname=webhello-0.0.1-1.$(uname -m)
+mkdir -p $pkgname/usr/bin/
+cp ../cargo/debug/webhello $pkgname/usr/bin
+chmod 0755 $pkgname/usr/bin/webhello
+mkdir -p $pkgname/DEBIAN/
+cp ../../docker/DEB.control $pkgname/DEBIAN/control
+chmod 0644 $pkgname/DEBIAN/control
+dpkg-deb --build --root-owner-group $pkgname

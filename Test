@@ -99,6 +99,8 @@ dent "${image_prefix}-build" bash -e -c "
     cd webhello
     echo 'hello-rust-apt/webhello/: cargo build ' $quiet
     cargo build $quiet
+
+    ../docker/make-package
 "
 dent "${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
 
