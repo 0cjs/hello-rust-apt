@@ -14,7 +14,7 @@ command cd "$PROJDIR"/.build/package
 
 pkgname=webhello-0.0.1-1.$(uname -m)
 mkdir -p $pkgname/usr/bin/
-cp ../cargo/debug/webhello $pkgname/usr/bin
+cp ../cargo/webhello/debug/webhello $pkgname/usr/bin
 chmod 0755 $pkgname/usr/bin/webhello
 mkdir -p $pkgname/DEBIAN/
 cp ../../docker/DEB.control $pkgname/DEBIAN/control
