@@ -33,7 +33,9 @@ setup_docker() {
 
 docker_build_run() {
     declare -g quiet
-    local btag="$1"; shift
+    local prefix="$1"; shift
+    local suffix="$1"; shift
+    local btag="$prefix-$suffix"
 
     #   We assume that if the user is running Test, they want to rebuild
     #   the image (if necessary) and run a fresh container from it. This
@@ -47,7 +49,7 @@ docker_build_run() {
     echo "----- Building image $btag"
     $docker buildx build $quiet \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
-        --tag "$btag" --file docker/Dockerfile.build docker/
+        --tag "$btag" --file "docker/Dockerfile.$suffix" docker/
 
     #   Make this container "persistent" by starting a background process
     #   that will simply continue running for a few hours; log in with
@@ -90,7 +92,7 @@ setup_docker
 
 source "$PROJDIR/pactivate" -q      # make `dent` available
 
-docker_build_run "${image_prefix}-build"
+docker_build_run "${image_prefix}" build
 dent "${image_prefix}-build" bash -e -c "
     cd hello-rust-apt/
     #   This is required for the webhello/Cargo.toml symlink to work.
@@ -103,5 +105,7 @@ dent "${image_prefix}-build" bash -e -c "
     ../docker/make-package
 "
 dent "${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
+
+docker_build_run "${image_prefix}" install
 
 echo "OK ($(elapsed)s)"
