@@ -1,6 +1,5 @@
 /.build/
 /tmp/
 
-#   We don't yet put Cargo build products in .build/.
-/webhello/Cargo.lock
-/webhello/target/
+#   Cargo.lock files are placed under /.build/ by committed symlinks.
+#   Cargo build products are placed under /.build/ by /.cargo/config.toml.

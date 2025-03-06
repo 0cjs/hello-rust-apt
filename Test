@@ -86,12 +86,15 @@ setup_docker
 source "$PROJDIR/pactivate" -q      # make `dent` available
 
 docker_build_run "${image_prefix}-build"
-dent "${image_prefix}-build" bash -c '
-    source hello-rust-apt/docker/rustup-env
-    cd hello-rust-apt/webhello
-    echo "hello-rust-apt/webhello/: cargo build"
-    cargo build -q
-'
+dent "${image_prefix}-build" bash -e -c "
+    cd hello-rust-apt/
+    #   This is required for the webhello/Cargo.toml symlink to work.
+    mkdir -p .build/cargo/webhello/
+    source docker/rustup-env
+    cd webhello
+    echo 'hello-rust-apt/webhello/: cargo build ' $quiet
+    cargo build $quiet
+"
 dent "${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
 
 echo "OK ($(elapsed)s)"
