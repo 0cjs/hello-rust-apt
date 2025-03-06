@@ -78,7 +78,7 @@ quiet=-q
 image_prefix=hra    # override with -i
 while [[ ${#@} -gt 0 ]]; do case "$1" in
     -C)     shift; rm -rf ".build/";;
-    -c)     shift; rm -rf ".build/virtualenv" ".build/docker";;
+    -c)     shift; rm -rf .build/{cargo,docker,virtualenv};;
     -i)     shift; image_prefix="$1"; shift;;
     -v)     shift; quiet='';;
     --)     shift; break;;                  # remainder are ??? args?
