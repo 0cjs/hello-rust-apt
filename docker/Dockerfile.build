@@ -28,7 +28,6 @@ RUN  curl -sSf --proto '=https' --tlsv1.2 https://sh.rustup.rs \
             --default-toolchain stable --profile minimal -y \
   && true
 
-
 ####################################################################
 #   User creation and setup
 
@@ -68,11 +67,6 @@ RUN  useradd \
         https://raw.githubusercontent.com/dot-home/dot-home/main/bootstrap-user \
      | sudo --login --user "$USER_NAME" bash \
   && true
-
-####################################################################
-#   Temporary changes to be moved above.
-#   This section is useful for quickly testing changes that will eventually
-#   move to earlier layers that will trigger a longer rebuild process.
 
 ####################################################################
 
