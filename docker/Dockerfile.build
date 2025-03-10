@@ -69,6 +69,7 @@ RUN  useradd \
   && true
 
 ####################################################################
+#   All work from here on is done as the non-root user.
 
 USER $USER_NAME
 WORKDIR /home/$USER_NAME

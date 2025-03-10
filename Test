@@ -37,14 +37,18 @@ docker_build_run() {
     local suffix="$1"; shift
     local btag="$prefix-$suffix"
 
+    #   A non-root user is created in the container; we make it the same
+    #   UID and name as the builder running this script so that we can
+    #   share files using bind mounts. (XXX This assumes that the builder
+    #   also owns the files in this working copy of the repo.)
+    local USER_ID="$(id -u)"
+    local USER_NAME="$(id -u -n)"
+
     #   We assume that if the user is running Test, they want to rebuild
     #   the image (if necessary) and run a fresh container from it. This
     #   will destroy any existing sessions in the old container, ensuring
     #   we're starting clean.
     $docker container rm -f "$btag" >/dev/null 2>&1 || true
-
-    local USER_ID="$(id -u)"
-    local USER_NAME="$(id -u -n)"
 
     echo "----- Building image $btag"
     $docker buildx build ${clean_big:+--no-cache=true} $quiet \
