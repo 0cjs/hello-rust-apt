@@ -35,7 +35,13 @@ docker_build_run() {
     declare -g quiet
     local prefix="$1"; shift
     local suffix="$1"; shift
-    local btag="$prefix-$suffix"
+    #   We use $USER instead of $USER_NAME to distinguish the images and
+    #   containers tag because the purpose is different: $USER is the one
+    #   running this and we want the tags to avoid collision with other
+    #   users on the system who might be running their copies of this repo.
+    #   That's orthogonal to the user being created in the container,
+    #   though generally the same.
+    local btag="$USER-$prefix-$suffix"
 
     #   A non-root user is created in the container; we make it the same
     #   UID and name as the builder running this script so that we can
@@ -64,7 +70,7 @@ docker_build_run() {
     #   • We mount this entire repo read/write into the home dir of the
     #     user so we can build whatever parts of it we need.
     echo "----- Running container $btag"
-    $docker run --name "$btag"\
+    $docker run --name "$btag" \
         --rm=false --detach=true --tty=false \
         -v "$PROJDIR:/home/$USER_NAME/$(basename "$PROJDIR"):rw" \
         "$btag" /bin/sleep $((6*3600)) \
@@ -98,8 +104,12 @@ setup_docker
 
 source "$PROJDIR/pactivate" -q      # make `dent` available
 
+#   XXX $USER, $image_prefix and the suffix are not well handled here; we
+#   duplicate some of the image and container name construction both here
+#   and in docker_build_run().
+
 docker_build_run "${image_prefix}" build
-dent "${image_prefix}-build" bash -e -c "
+dent "$USER-${image_prefix}-build" bash -e -c "
     cd hello-rust-apt/
     #   This is required for the webhello/Cargo.toml symlink to work.
     mkdir -p .build/cargo/webhello/
@@ -110,7 +120,7 @@ dent "${image_prefix}-build" bash -e -c "
 
     ../docker/make-package
 "
-dent "${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
+dent "$USER-${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
 
 docker_build_run "${image_prefix}" install
 
