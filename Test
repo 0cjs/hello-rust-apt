@@ -47,7 +47,7 @@ docker_build_run() {
     local USER_NAME="$(id -u -n)"
 
     echo "----- Building image $btag"
-    $docker buildx build $quiet \
+    $docker buildx build ${clean_big:+--no-cache=true} $quiet \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
         --tag "$btag" --file "docker/Dockerfile.$suffix" docker/
 
@@ -74,11 +74,13 @@ docker_build_run() {
 export PROJDIR=$(command cd "$(dirname "$0")" && pwd -P)
 command cd "$PROJDIR"   # Makes life easier until we need to use file args.
 
+clean_big=
+clean_small=
 quiet=-q
 image_prefix=hra    # override with -i
 while [[ ${#@} -gt 0 ]]; do case "$1" in
-    -C)     shift; rm -rf ".build/";;
-    -c)     shift; rm -rf .build/{cargo,docker,virtualenv};;
+    -C)     shift; clean_big=true; rm -rf ".build/";;
+    -c)     shift; clean_small=true; rm -rf .build/{cargo,docker,virtualenv};;
     -i)     shift; image_prefix="$1"; shift;;
     -v)     shift; quiet='';;
     --)     shift; break;;                  # remainder are ??? args?
