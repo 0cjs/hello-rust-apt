@@ -2,7 +2,9 @@
 set -Eeuo pipefail
 trap '
     ec=$?
-    echo 1>&2 "INTERNAL ERROR: ec=$ec line=$LINENO"
+    #   Becuase of the way we quote this section, and this comment, the actual
+    #   line number of a failure is 4 less than what Bash says it is.
+    echo 1>&2 "INTERNAL ERROR: ec=$ec line=$(($LINENO-4))"
     echo 1>&2 "    file=$0"
     echo 1>&2 "    cmd=$BASH_COMMAND"
     exit $ec;
