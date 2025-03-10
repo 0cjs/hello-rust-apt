@@ -52,6 +52,21 @@ docker_build_run() {
     local USER_ID="$(id -u)"
     local USER_NAME="$(id -u -n)"
 
+    #   Create the Docker context we will use for this build. We use $btag,
+    #   which includes the $USER prefix, because that's easier overall,
+    #   even though it means different users will have different directory
+    #   names under .build/docker/.
+    dcontext=".build/docker/$btag"
+    echo "----- Building Docker context $dcontext"
+    #   The context is quick to rebuild, so we do a clean build of it
+    #   every time rather than try to deal with updating it.
+    rm -rf "$dcontext"
+    mkdir -p "$(dirname "$dcontext")"
+    cp -r docker/ "$dcontext"
+    (   cd "$dcontext"
+        cp "Dockerfile.$suffix" Dockerfile
+    )
+
     #   We assume that if the user is running Test, they want to rebuild
     #   the image (if necessary) and run a fresh container from it. This
     #   will destroy any existing sessions in the old container, ensuring
@@ -61,7 +76,7 @@ docker_build_run() {
     echo "----- Building image $btag"
     $docker buildx build ${clean_big:+--no-cache=true} $quiet \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
-        --tag "$btag" --file "docker/Dockerfile.$suffix" docker/
+        --tag "$btag" "$dcontext"
 
     #   Make this container "persistent" by starting a background process
     #   that will simply continue running for a few hours; log in with
