@@ -12,7 +12,7 @@ export PROJDIR=$(command cd "$(dirname "$0")/.." && pwd -P)
 mkdir -p "$PROJDIR"/.build/package
 command cd "$PROJDIR"/.build/package
 
-pkgname=webhello-0.0.1-1.$(uname -m)
+pkgname=webhello-0.0.1-1.$(dpkg --print-architecture)
 mkdir -p $pkgname/usr/bin/
 cp ../cargo/webhello/debug/webhello $pkgname/usr/bin
 chmod 0755 $pkgname/usr/bin/webhello
