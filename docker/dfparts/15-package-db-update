@@ -1,0 +1,14 @@
+####################################################################
+#   Set up and update package database.
+#
+#   The `apt update` isn't free, so we do it in an early layer and all
+#   subsequent layers can assume it's been done. But we need to do a clean
+#   rebuild regularly in order to refresh this.
+#
+#   (Possibly we should be using an ARG here based on the date to ensure
+#   it's updated, say, weekly.)
+
+#   Make Debian source packages available, as they're not by default.
+COPY --chmod=go+r deb-src.list /etc/apt/sources.list.d/
+
+RUN  apt update

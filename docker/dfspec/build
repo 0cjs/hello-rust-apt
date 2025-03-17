@@ -1,0 +1,7 @@
+#   This image builds the program to be packaged.
+
+include(10-base)
+include(15-package-db-update)
+include(20-debug-packages)
+include(30-build-packages)
+include(60-user-setup)

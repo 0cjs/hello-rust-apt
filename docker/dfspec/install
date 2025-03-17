@@ -1,0 +1,3 @@
+#   This image confirms the package can be installed.
+
+include(10-base)

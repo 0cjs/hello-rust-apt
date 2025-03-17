@@ -1,0 +1,18 @@
+####################################################################
+#   "Debug" packages handy for exploring the container and debugging
+#   problems within it.
+#
+#   Some care has to be taken here because this is used in the "test the
+#   package install" container, and so anything here that's an unmarked
+#   dependency of the package will not trigger an error as it should.
+#
+#   XXX Probably we should not be installing any of this at all in the
+#   "test package install" container, but for the moment it speeds
+#   development to have these exploration/debugging tools available.
+
+RUN  DEBIAN_FRONTEND=noninteractive apt install -y \
+         sudo locales procps file curl wget netcat-openbsd \
+         git vim man-db \
+  && sed -i -e '/en_US/s/^# //' /etc/locale.gen \
+  && locale-gen \
+  && true

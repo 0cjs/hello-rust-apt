@@ -67,8 +67,8 @@ docker_build_run() {
     mkdir -p "$(dirname "$dcontext")"
     cp -r docker/ "$dcontext"
     (   cd "$dcontext"
-        cp "Dockerfile.$suffix" Dockerfile
-    )
+        m4 -E -E -I dfparts/ dfspec/$suffix > Dockerfile
+    ) || fail "Failed to build context"
 
     #   We assume that if the user is running Test, they want to rebuild
     #   the image (if necessary) and run a fresh container from it. This

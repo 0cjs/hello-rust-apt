@@ -1,0 +1,22 @@
+####################################################################
+#   Build packages from the Linux distro
+
+RUN  DEBIAN_FRONTEND=noninteractive apt install -y \
+         build-essential \
+         dpkg-dev devscripts \
+  && true
+
+####################################################################
+#   Rust installation and configuration
+
+#   We install a "global" Rust/Cargo so that the user-specific information
+#   in in a layer after this, speeding builds when we don't need to update
+#   to a new version of Rust. Use this in the container with:
+#     source ~/hello-rust-apt/docker/rustup-env
+#   Note that the installation is not yet world-writable.
+RUN  curl -sSf --proto '=https' --tlsv1.2 https://sh.rustup.rs \
+     | CARGO_HOME=/opt/cargo RUSTUP_HOME=/opt/rustup \
+       bash -s -- --no-modify-path \
+            --default-toolchain stable --profile minimal -y \
+  && true
+
