@@ -45,15 +45,7 @@ docker_build_run() {
     #   the usual variables ($PROJDIR etc.) are available.
     local build_extra_context=true
     [[ $# -gt 0 ]] && { build_extra_context="$1"; shift; }
-    local project=$(basename "$PROJDIR")
-
-    #   We use $USER instead of $USER_NAME to distinguish the images and
-    #   containers tag because the purpose is different: $USER is the one
-    #   running this and we want the tags to avoid collision with other
-    #   users on the system who might be running their copies of this repo.
-    #   That's orthogonal to the user being created in the container,
-    #   though generally the same.
-    local btag="$USER-$image_prefix-$suffix"
+    local btag="$image_prefix-$suffix"
 
     #   A non-root user is created in the container; we make it the same
     #   UID and name as the builder running this script so that we can
@@ -62,11 +54,8 @@ docker_build_run() {
     local USER_ID="$(id -u)"
     local USER_NAME="$(id -u -n)"
 
-    #   Create the Docker context we will use for this build. We use $btag,
-    #   which includes the $USER prefix, because that's easier overall,
-    #   even though it means different users will have different directory
-    #   names under .build/docker/.
-    dcontext=".build/docker/$btag"
+    #   Create the Docker context we will use for this build.
+    local dcontext=".build/docker/$btag"
     echo "----- Building Docker context $dcontext"
     #   The context is quick to rebuild, so we do a clean build of it
     #   every time rather than try to deal with updating it.
@@ -119,7 +108,12 @@ clean_big=
 clean_small=
 quiet=-q
 loud=
-image_prefix=hra    # override with -i
+#   $image_prefix includes the user name $USER to avoid colliding with
+#   other devs on the same development host, and `hra` to avoid colliding
+#   with other projects on the same host and make it more obvious where the
+#   images and containers are from.
+image_prefix="$USER-hra"    # override with -i
+
 while [[ ${#@} -gt 0 ]]; do case "$1" in
     -C)     shift; clean_big=true; rm -rf ".build/";;
     -c)     shift; clean_small=true; rm -rf .build/{cargo,docker,virtualenv};;
@@ -130,16 +124,13 @@ while [[ ${#@} -gt 0 ]]; do case "$1" in
     *)      break;;                         # guessing remainder are for pytest
 esac; done
 [[ $# -eq 0 ]] || die 2 "Invalid arg: $1"
+
 setup_docker
 
 ####################################################################
-#   build and test
+#   Build and test
 
 source "$PROJDIR/pactivate" -q      # make `dent` available
-
-#   XXX $USER, $image_prefix and the suffix are not well handled here; we
-#   duplicate some of the image and container name construction both here
-#   and in docker_build_run().
 
 context_webhello_src() {
     #   We want _just_ the source for the server, so that we don't need
