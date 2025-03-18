@@ -37,16 +37,23 @@ setup_docker() {
 #   Build/run functions
 
 docker_build_run() {
-    declare -g quiet
-    local prefix="$1"; shift
+    declare -g quiet image_prefix
     local suffix="$1"; shift
+    #   This optional function (or command) will, if given, be called
+    #   during the creation of the context to add whatever extra things
+    #   you need for it. CWD will be set to the context being built and
+    #   the usual variables ($PROJDIR etc.) are available.
+    local build_extra_context=true
+    [[ $# -gt 0 ]] && { build_extra_context="$1"; shift; }
+    local project=$(basename "$PROJDIR")
+
     #   We use $USER instead of $USER_NAME to distinguish the images and
     #   containers tag because the purpose is different: $USER is the one
     #   running this and we want the tags to avoid collision with other
     #   users on the system who might be running their copies of this repo.
     #   That's orthogonal to the user being created in the container,
     #   though generally the same.
-    local btag="$USER-$prefix-$suffix"
+    local btag="$USER-$image_prefix-$suffix"
 
     #   A non-root user is created in the container; we make it the same
     #   UID and name as the builder running this script so that we can
@@ -68,6 +75,7 @@ docker_build_run() {
     cp -r docker/ "$dcontext"
     (   cd "$dcontext"
         m4 -E -E -I dfparts/ dfspec/$suffix > Dockerfile
+        $build_extra_context
     ) || fail "Failed to build context"
 
     #   We assume that if the user is running Test, they want to rebuild
@@ -77,7 +85,8 @@ docker_build_run() {
     $docker container rm -f "$btag" >/dev/null 2>&1 || true
 
     echo "----- Building image $btag"
-    $docker buildx build ${clean_big:+--no-cache=true} $quiet \
+    $docker buildx build ${clean_big:+--no-cache=true} \
+        $quiet ${loud:+--progress=plain} \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
         --tag "$btag" "$dcontext"
 
@@ -88,7 +97,9 @@ docker_build_run() {
     #
     #   Configuration notes:
     #   • We mount this entire repo read/write into the home dir of the
-    #     user so we can build whatever parts of it we need.
+    #     user so we can build whatever parts of it we need. Note that
+    #     this is _not_ the build done by the build container, but
+    #     completely independent.
     echo "----- Running container $btag"
     $docker run --name "$btag" \
         --rm=false --detach=true --tty=false \
@@ -107,12 +118,14 @@ command cd "$PROJDIR"   # Makes life easier until we need to use file args.
 clean_big=
 clean_small=
 quiet=-q
+loud=
 image_prefix=hra    # override with -i
 while [[ ${#@} -gt 0 ]]; do case "$1" in
     -C)     shift; clean_big=true; rm -rf ".build/";;
     -c)     shift; clean_small=true; rm -rf .build/{cargo,docker,virtualenv};;
     -i)     shift; image_prefix="$1"; shift;;
     -v)     shift; quiet='';;
+    -V)     shift; quiet=''; loud=true;;
     --)     shift; break;;                  # remainder are ??? args?
     *)      break;;                         # guessing remainder are for pytest
 esac; done
@@ -128,20 +141,20 @@ source "$PROJDIR/pactivate" -q      # make `dent` available
 #   duplicate some of the image and container name construction both here
 #   and in docker_build_run().
 
-docker_build_run "${image_prefix}" build
-dent "$USER-${image_prefix}-build" bash -e -c "
-    cd hello-rust-apt/
-    #   This is required for the webhello/Cargo.toml symlink to work.
-    mkdir -p .build/cargo/webhello/
-    source docker/rustup-env
-    cd webhello
-    echo 'hello-rust-apt/webhello/: cargo build ' $quiet
-    cargo build $quiet
+context_webhello_src() {
+    #   We want _just_ the source for the server, so that we don't need
+    #   to rebuild the layer that builds that source if other parts of
+    #   this repo have changed.
+    tar -C "$PROJDIR" -czf webhello.tar.gz \
+        docker/rustup-env package/ \
+        webhello/
+}
+docker_build_run build context_webhello_src
+#   We now have a container with the following in the user's home dir:
+#   • image-build/: the build done in the image build
+#   • hello-rust-apt/: completely separate bind mount of the project
+#   You may build and play with either or both.
 
-    ../docker/make-package
-"
-dent "$USER-${image_prefix}-build" hello-rust-apt/webhello/test-hello-server
-
-docker_build_run "${image_prefix}" install
+docker_build_run install
 
 echo "OK ($(elapsed)s)"

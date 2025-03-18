@@ -17,6 +17,6 @@ mkdir -p $pkgname/usr/bin/
 cp ../cargo/webhello/debug/webhello $pkgname/usr/bin
 chmod 0755 $pkgname/usr/bin/webhello
 mkdir -p $pkgname/DEBIAN/
-cp ../../docker/DEB.control $pkgname/DEBIAN/control
+cp ../../package/DEB.control $pkgname/DEBIAN/control
 chmod 0644 $pkgname/DEBIAN/control
 dpkg-deb --build --root-owner-group $pkgname

@@ -5,3 +5,18 @@ include(15-package-db-update)
 include(20-debug-packages)
 include(30-build-packages)
 include(60-user-setup)
+
+ADD --chown=$USER_UID webhello.tar.gz image-build/
+#   Rust build notes:
+#   • webhello/ builds into ../.build/cargo/webhello. But we still need to
+#     create that directory before we `cargo build` other the
+#     webhello/Cargo.lock symlink will fail.
+RUN    cd image-build/webhello \
+    && source ../docker/rustup-env \
+    && mkdir -p ../.build/cargo/webhello/ \
+    && cargo build \
+    && true
+RUN image-build/webhello/test-hello-server
+#   Package build is a separate layer to speed testing of that.
+#   (The built code we're packaging almost never changes.)
+RUN image-build/package/make-package
