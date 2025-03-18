@@ -43,3 +43,4 @@ RUN  useradd \
 
 USER $USER_NAME
 WORKDIR /home/$USER_NAME
+SHELL ["/bin/bash", "-c"]
