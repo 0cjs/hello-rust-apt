@@ -1,3 +1,24 @@
 #   This image confirms the package can be installed.
 
+#   The following gives this warning:
+#     InvalidDefaultArgInFrom: Default value for ARG ${image_prefix}-build
+#     results in empty or invalid base image name
+#   The reason for that is here:
+#     https://docs.docker.com/reference/build-checks/invalid-default-arg-in-from/
+#   "Bad: don't rely on an ARG being set for an image reference to be valid"
+#
+#   The issue is that, even if --build-arg=image_prefix is supplied, Docker
+#   still checks that the _default_ value if it weren't supplied is a valid
+#   image name, even though we're not using that. This seems difficult to
+#   avoid since we have no reasonable default, and want simply to fail if
+#   we're not given a $image_prefix that results in a valid image name.
+#
+ARG image_prefix=
+FROM ${image_prefix}-build AS build
+RUN echo OK  # Force failure if ${image_prefix}-build not found.
+
 include(10-base)
+ARG USER_NAME
+COPY --from=build \
+    /home/${USER_NAME}/image-build/.build/package/webhello-0.0.1-1.amd64.deb ./
+RUN apt install ./webhello-0.0.1-1.amd64.deb

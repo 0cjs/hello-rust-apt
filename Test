@@ -76,6 +76,7 @@ docker_build_run() {
     echo "----- Building image $btag"
     $docker buildx build ${clean_big:+--no-cache=true} \
         $quiet ${loud:+--progress=plain} \
+        --build-arg=image_prefix="$image_prefix" \
         --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
         --tag "$btag" "$dcontext"
 
