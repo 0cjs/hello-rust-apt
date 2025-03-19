@@ -148,6 +148,9 @@ docker_build_run build context_webhello_build
 #   • hello-rust-apt/: completely separate bind mount of the project
 #   You may build and play with either or both.
 
-docker_build_run install
+context_webhello_inst() {
+    cp "$PROJDIR/hello-server-test" ./
+}
+docker_build_run install context_webhello_inst
 
 echo "OK ($(elapsed)s)"

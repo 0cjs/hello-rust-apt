@@ -17,8 +17,23 @@ ARG image_prefix=
 FROM ${image_prefix}-build AS build
 RUN echo OK  # Force failure if ${image_prefix}-build not found.
 
+####################################################################
+
 include(10-base)
+
+#   Minimum packages we need to run the test in this container.
+#   Possibly it should be run outside the container.
+include(15-package-db-update)
+RUN DEBIAN_FRONTEND=noninteractive apt install -y curl
+
 ARG USER_NAME
 COPY --from=build \
     /home/${USER_NAME}/image-build/.build/package/webhello-0.0.1-1.amd64.deb ./
 RUN apt install ./webhello-0.0.1-1.amd64.deb
+
+ARG USER_UID
+COPY --chown=$USER_UID hello-server-test ./
+RUN     true \
+    && webhello & sleep 0.5 \
+    && ./hello-server-test \
+    && true
