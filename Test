@@ -51,7 +51,7 @@ docker_build_run() {
     #   UID and name as the builder running this script so that we can
     #   share files using bind mounts. (XXX This assumes that the builder
     #   also owns the files in this working copy of the repo.)
-    local USER_ID="$(id -u)"
+    local USER_UID="$(id -u)"
     local USER_NAME="$(id -u -n)"
 
     #   Create the Docker context we will use for this build.
@@ -77,7 +77,7 @@ docker_build_run() {
     $docker buildx build ${clean_big:+--no-cache=true} \
         $quiet ${loud:+--progress=plain} \
         --build-arg=image_prefix="$image_prefix" \
-        --build-arg=USER_UID="$USER_ID" --build-arg=USER_NAME="$USER_NAME" \
+        --build-arg=USER_UID="$USER_UID" --build-arg=USER_NAME="$USER_NAME" \
         --tag "$btag" "$dcontext"
 
     #   Make this container "persistent" by starting a background process
@@ -133,7 +133,7 @@ setup_docker
 
 source "$PROJDIR/pactivate" -q      # make `dent` available
 
-context_webhello_src() {
+context_webhello_build() {
     #   We want _just_ the source for the server, so that we don't need
     #   to rebuild the layer that builds that source if other parts of
     #   this repo have changed.
@@ -142,7 +142,7 @@ context_webhello_src() {
         webhello/
     cp "$PROJDIR/hello-server-test" ./
 }
-docker_build_run build context_webhello_src
+docker_build_run build context_webhello_build
 #   We now have a container with the following in the user's home dir:
 #   • image-build/: the build done in the image build
 #   • hello-rust-apt/: completely separate bind mount of the project
