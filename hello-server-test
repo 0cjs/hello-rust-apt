@@ -3,19 +3,13 @@
 #   hello-server-test - Confirm "hello" server is returning correct data
 #
 set -Eeuo pipefail
-trap '
-    ec=$?
-    echo 1>&2 "INTERNAL ERROR: ec=$ec line=$LINENO"
-    echo 1>&2 "    file=$0"
-    echo 1>&2 "    cmd=$BASH_COMMAND"
-    exit $ec;
-' ERR
+trap 'ec=$?; echo 1>&2 "INTERNAL ERROR: ec=$ec line=$LINENO"; exit $ec' ERR
+
+fail() { echo 2>&1 'FAILED:' "$@"; exit 1; }
 
 echo '===== test-hello-server'
 expected='Hello.'
-actual=$(curl --silent --show-error http://127.0.0.1:9999/hello)
-[[ $expected == $actual ]] || {
-    echo 1>&2 "FAILED: expected='$expected' actual='$actual'"
-    exit 1
-}
+actual=$(curl --silent --show-error http://127.0.0.1:9999/hello) \
+    || fail "server conection"
+[[ $expected == $actual ]] || fail "expected='$expected' actual='$actual'"
 echo '----- OK'
