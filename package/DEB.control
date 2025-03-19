@@ -2,5 +2,5 @@ Package: webhello
 Version: 0.0.1-1
 Maintainer: E. Xample <example@example.com>
 Architecture: all
-Depends:
+Depends: systemd
 Description: A web server that says "Hello," written in Rust.

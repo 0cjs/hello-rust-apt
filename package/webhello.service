@@ -1,0 +1,10 @@
+[Unit]
+Description=WebHello Service
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/webhello
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
