@@ -17,11 +17,19 @@ RUN    cd image-build/webhello \
     && cargo build \
     && true
 
-#   Run all pre-release tests.
-#   We would run unit tests here as well if we had them.
+#   Run pre-packaging tests (the unit tests, if we had any).
+RUN true
+
+#   Packaging: though small, this is not a particuarly cheap process.
+RUN image-build/package/make-package
+
+#   Normally we would run these integration tests before doing the
+#   packaging. But in this project the code almost never changes but the
+#   `hello-server-test` script changes regularly (because it's also used to
+#   test the installed package) so we save more time in rebuilds during
+#   development by putting the packaging layer before this one.
 ADD --chown=$USER_UID hello-server-test image-build/
 RUN    image-build/webhello/cargo-start-server \
     && image-build/hello-server-test \
     && true
 
-RUN image-build/package/make-package
