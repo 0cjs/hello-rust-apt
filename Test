@@ -137,9 +137,8 @@ context_webhello_build() {
     #   We want _just_ the source for the server, so that we don't need
     #   to rebuild the layer that builds that source if other parts of
     #   this repo have changed.
-    tar -C "$PROJDIR" -czf webhello.tar.gz \
-        docker/rustup-env package/ \
-        webhello/
+    tar -C "$PROJDIR" -czf webhello.tar.gz  docker/rustup-env webhello/
+    tar -C "$PROJDIR" -czf package.tar.gz   package/
     cp "$PROJDIR/hello-server-test" ./
 }
 docker_build_run build context_webhello_build

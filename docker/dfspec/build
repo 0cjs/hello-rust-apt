@@ -21,6 +21,7 @@ RUN    cd image-build/webhello \
 RUN true
 
 #   Packaging: though small, this is not a particuarly cheap process.
+ADD --chown=$USER_UID package.tar.gz image-build/
 RUN image-build/package/make-package
 
 #   Normally we would run these integration tests before doing the
