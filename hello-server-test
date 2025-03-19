@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+#   hello-server-test - Confirm "hello" server is returning correct data
+#
 set -Eeuo pipefail
 trap '
     ec=$?
@@ -8,19 +11,9 @@ trap '
     exit $ec;
 ' ERR
 
-export PROJDIR=$(command cd "$(dirname "$0")" && pwd -P)
-cd "$PROJDIR"
-
 echo '===== test-hello-server'
-
-source ../docker/rustup-env
-cargo run -q & server_pid=$!; sleep 0.5    # give it startup time
-
 expected='Hello.'
 actual=$(curl --silent --show-error http://127.0.0.1:9999/hello)
-#   The server is killed on exit anyway, but this collects the zombie.
-kill $server_pid; wait
-
 [[ $expected == $actual ]] || {
     echo 1>&2 "FAILED: expected='$expected' actual='$actual'"
     exit 1

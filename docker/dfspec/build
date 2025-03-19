@@ -16,7 +16,12 @@ RUN    cd image-build/webhello \
     && mkdir -p ../.build/cargo/webhello/ \
     && cargo build \
     && true
-RUN image-build/webhello/test-hello-server
-#   Package build is a separate layer to speed testing of that.
-#   (The built code we're packaging almost never changes.)
+
+#   Run all pre-release tests.
+#   We would run unit tests here as well if we had them.
+ADD --chown=$USER_UID hello-server-test image-build/
+RUN    image-build/webhello/cargo-start-server \
+    && image-build/hello-server-test \
+    && true
+
 RUN image-build/package/make-package

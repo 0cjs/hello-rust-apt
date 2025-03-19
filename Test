@@ -140,6 +140,7 @@ context_webhello_src() {
     tar -C "$PROJDIR" -czf webhello.tar.gz \
         docker/rustup-env package/ \
         webhello/
+    cp "$PROJDIR/hello-server-test" ./
 }
 docker_build_run build context_webhello_src
 #   We now have a container with the following in the user's home dir:

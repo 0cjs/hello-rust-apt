@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#
+#   cargo-start-server - start server for local developer testing
+#
+set -Eeuo pipefail
+
+cd "$(command cd "$(dirname "$0")" && pwd -P)"
+source ../docker/rustup-env
+cargo run -q & server_pid=$!; sleep 0.5    # give it startup time
+echo "----- server started: pid=$server_pid"
