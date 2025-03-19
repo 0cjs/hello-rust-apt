@@ -3,7 +3,7 @@ hello-rust-apt
 
 This repo is an example of building, packaging and testing a simple "Hello,
 world" server. It's intended to create a Debian package installable via
-`apt`.
+`dpkg -i` or `apt`.
 
 Development branches should be named `dev/NAME/…` where _name_ is a short
 tag indicating the creator/owner of a branch, and _…_ is anything you find
@@ -24,20 +24,21 @@ Python and Docker to be installed. It accepts the following options:
 - `-c`: Do a "small" clean for a faster rebuild by removing all but
   framework items unlikely ever to change, such as the pactivate bootstrap.
 - `-v`: Make the builds more verbose.
-- `-i prefix`: Change the "hra" prefix used on images/containers below to
-  _prefix._
-
-See the `Test` script for details of how the testing is done. (Generally,
-this involves XXX
+- `-V`: Make the builds very verbose (particularly Docker builds).
+- `-i prefix`: Change the "$USER-hra" prefix used on images/containers
+  below to _prefix._
 
 For ease of experimentation and confirmation of dependencies (both system-
 and project-supplied), this does its work in two Docker images/containers:
-- `hra-build`: Installs all dependencies required to compile and package
-  the software, and then compiles and packages it. This is done entirely
-  via `docker build`; a container of the same name is started from the
-  image so you can interactively test and debug it.
+- `$USER-hra-build`: Installs all dependencies required to compile and
+  package the software, compiles and packages it, and runs a basic test.
+  This is done entirely via `docker build`; a container of the same name is
+  started from the image so you can interactively test and debug it.
 - `hra-test`: Installs the package from above, starts the server, and
-  confirms that it's working. (Not yet implemented.)
+  confirms that it's working.
+
+Both of the above use `hello-server-test` to test the server; that
+simply connects to it and confirms it's returning the right response.
 
 The containers are left running for six hours so you can enter them (using
 `dent` from the virtual environment or just `docker exec -it`) to poke
@@ -48,12 +49,11 @@ existing containers created by this system and start new ones.
 
 - `webhello/`: Source for Rust "web Hello" program, a web server that
   replies to `GET /hello`.
-- `webhello/test-hello-server`: Test program run against the build
-  container: starts the web server and confirms that it's running and
-  giving a correct response.
+- `test-hello-server`: Connects to the server, confirming that it's running
+  and giving a correct response.
 - `docker/`: Docker configurations for build and test containers
-- `.build/docker/build`: Build of webhello.
-- `.build/docker/test`: Test of apt-packaged version of webhello.
+- `package/`: Debian packaging scripts and configuration (non-standard format).
+- `.build/docker/*`: Docker contexts for the image builds.
 
 
 Details
